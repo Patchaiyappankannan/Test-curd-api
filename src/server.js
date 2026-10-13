@@ -33,8 +33,8 @@ function createApp(sequelize) {
 async function start() {
   const sequelize = await initializeDatabase();
   const app = createApp(sequelize);
-  const port = Number(process.env.PORT || 3000);
-  const server = app.listen(port, '0.0.0.0', () => {
+  const port = Number(process.env.PORT || 6000);
+  const server = app.listen(port, () => {
     console.log(`Products API listening on port ${port}.`);
   });
 

@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const { Sequelize } = require('sequelize');
 const { migrateProducts } = require('../migrations/create-products');
 
-dotenv.config({ path: process.env.ENV_FILE || path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: process.env.ENV_FILE || path.resolve(__dirname, '../../.env') });
 
 function getDatabaseConfig() {
   const required = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
