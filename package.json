@@ -12,6 +12,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "sequelize": "^6.37.7",

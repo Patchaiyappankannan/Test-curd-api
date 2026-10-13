@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const { initializeDatabase } = require('./config/database');
 const { defineProduct } = require('./models/product');
 const { createProductsRouter } = require('./routes/products');
@@ -6,8 +7,13 @@ const { createProductsRouter } = require('./routes/products');
 function createApp(sequelize) {
   const app = express();
   const Product = defineProduct(sequelize);
+  const allowedOrigins = (process.env.CLIENT_URL || 'https://testcrud.duckdns.org,http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   app.disable('x-powered-by');
+  app.use(cors({ origin: allowedOrigins }));
   app.use(express.json({ limit: '32kb' }));
   app.get('/health', async (req, res) => {
     await sequelize.query('SELECT 1');
