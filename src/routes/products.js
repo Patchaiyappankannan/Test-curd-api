@@ -1,4 +1,34 @@
 const { Router } = require('express');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const multer = require('multer');
+
+const uploadDirectory = path.resolve(process.env.UPLOAD_DIR || path.resolve(__dirname, '../../uploads'));
+const allowedImageTypes = new Map([
+  ['image/jpeg', '.jpg'],
+  ['image/png', '.png'],
+  ['image/webp', '.webp']
+]);
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, callback) => {
+      fs.mkdir(uploadDirectory, { recursive: true }, (error) => callback(error, uploadDirectory));
+    },
+    filename: (req, file, callback) => {
+      callback(null, `${crypto.randomUUID()}${allowedImageTypes.get(file.mimetype) || ''}`);
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, callback) => callback(null, allowedImageTypes.has(file.mimetype))
+});
+
+function deleteImage(imageUrl) {
+  if (!imageUrl) return;
+  const fileName = path.basename(imageUrl);
+  fs.unlink(path.join(uploadDirectory, fileName), () => {});
+}
 
 function validateProduct(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -53,6 +83,23 @@ function createProductsRouter(Product) {
     res.status(201).json(product);
   });
 
+  router.post('/:id/image', upload.single('image'), async (req, res) => {
+    const id = getId(req.params.id);
+    if (id === null) return res.status(400).json({ error: 'Product ID must be a positive integer.' });
+    if (!req.file) return res.status(400).json({ error: 'Upload a JPEG, PNG, or WebP image up to 5 MB.' });
+
+    const product = await Product.findByPk(id);
+    if (!product) {
+      fs.unlink(req.file.path, () => {});
+      return res.status(404).json({ error: 'Product not found.' });
+    }
+
+    const previousImage = product.ImageUrl;
+    await product.update({ ImageUrl: `/api/uploads/${req.file.filename}` });
+    deleteImage(previousImage);
+    res.json(product);
+  });
+
   router.put('/:id', async (req, res) => {
     const result = validateProduct(req.body);
     if (result.error) return res.status(400).json({ error: result.error });
@@ -69,7 +116,9 @@ function createProductsRouter(Product) {
     if (id === null) return res.status(400).json({ error: 'Product ID must be a positive integer.' });
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ error: 'Product not found.' });
+    const imageUrl = product.ImageUrl;
     await product.destroy();
+    deleteImage(imageUrl);
     res.status(204).end();
   });
 

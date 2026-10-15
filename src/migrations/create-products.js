@@ -15,6 +15,13 @@ async function migrateProducts(sequelize) {
       );
     END;
   `);
+
+  await sequelize.query(`
+    IF COL_LENGTH(N'dbo.Products', N'ImageUrl') IS NULL
+    BEGIN
+      ALTER TABLE dbo.Products ADD ImageUrl NVARCHAR(500) NULL;
+    END;
+  `);
 }
 
 module.exports = { migrateProducts };

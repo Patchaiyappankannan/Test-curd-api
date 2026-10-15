@@ -23,6 +23,10 @@ function defineProduct(sequelize) {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0
+    },
+    ImageUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true
     }
   }, {
     tableName: 'Products',

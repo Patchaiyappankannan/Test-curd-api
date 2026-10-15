@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('node:path');
 const { initializeDatabase } = require('./config/database');
 const { defineProduct } = require('./models/product');
 const { createProductsRouter } = require('./routes/products');
@@ -15,6 +16,7 @@ function createApp(sequelize) {
   app.disable('x-powered-by');
   app.use(cors({ origin: allowedOrigins }));
   app.use(express.json({ limit: '32kb' }));
+  app.use('/api/uploads', express.static(path.resolve(process.env.UPLOAD_DIR || path.resolve(__dirname, '../uploads'))));
   app.get('/health', async (req, res) => {
     await sequelize.query('SELECT 1');
     res.json({ status: 'ok' });
@@ -28,6 +30,9 @@ function createApp(sequelize) {
     }
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({ error: 'The product could not be saved with the supplied values.' });
+    }
+    if (error.name === 'MulterError') {
+      return res.status(400).json({ error: error.code === 'LIMIT_FILE_SIZE' ? 'Image must be 5 MB or smaller.' : 'The image upload is invalid.' });
     }
     console.error(error);
     res.status(500).json({ error: 'An unexpected server error occurred.' });
